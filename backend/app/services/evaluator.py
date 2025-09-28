@@ -2,6 +2,7 @@ from datetime import date, timedelta, datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import os
+from sqlalchemy import select, func
 
 from ..models import Cost, Alert
 from .anomaly import is_three_sigma_window, pct_vs_weekday_baseline
@@ -29,7 +30,7 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
 
         if is_three_sigma_window(values):
             triggered = True
-            parts.append("3σ spike vs rolling window")
+            parts.append("3-sigma spike vs rolling window")
 
         pct = pct_vs_weekday_baseline(wk)
         if pct and pct >= min_pct:
@@ -39,11 +40,25 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
         if triggered:
             msg = f"{svc}: " + " & ".join(parts)
             a = Alert(
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(datetime.timezone.utc),
                 rule_id="anomaly-basic",
                 severity="warning" if (pct or 0) < 1.0 else "critical",
                 message=msg,
             )
+            recent = db.execute(
+                select(func.count())
+                .select_from(Alert)
+                .where(
+                    Alert.rule_id == "anomaly-basic",
+                    Alert.severity == ("warning" if (pct or 0) < 1.0 else "critical"),
+                    Alert.message == msg,
+                    Alert.created_at >= datetime.now(datetime.timezone.utc) - timedelta(minutes=60),
+                )
+            ).scalar()
+
+            if recent and recent > 0:
+                continue  # skip duplicate
+
             db.add(a)
             created += 1
 
