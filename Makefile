@@ -11,3 +11,6 @@ logs:
 
 test:
 	docker compose exec -T backend pytest -q
+	
+alerts-run:
+\tdocker compose exec -T backend python -m app.services.worker
