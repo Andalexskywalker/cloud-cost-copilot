@@ -19,6 +19,7 @@ def list_costs(from_: date | None = None, to: date | None = None, service: str |
         q = q.filter(Cost.service == service)
     return q.order_by(Cost.day.asc()).limit(5000).all()
 
+
 @router.get("/aggregate")
 def aggregate_costs(
     group_by: str = Query("day,service"),
@@ -39,3 +40,4 @@ def aggregate_costs(
     q = q.group_by(Cost.day, Cost.service).order_by(Cost.day.asc(), Cost.service.asc())
     rows = q.all()
     return [{"day": str(r.day), "service": r.service, "total": float(r.total)} for r in rows]
+
