@@ -1,8 +1,10 @@
-import os, httpx
+import os, requests
 
-async def send_slack(text: str):
+def send_slack_sync(text: str):
     url = os.getenv("SLACK_WEBHOOK_URL")
     if not url:
         return
-    async with httpx.AsyncClient(timeout=10) as client:
-        await client.post(url, json={"text": text})
+    try:
+        requests.post(url, json={"text": text}, timeout=10)
+    except Exception:
+        pass
