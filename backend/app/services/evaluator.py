@@ -1,4 +1,4 @@
-from datetime import date, timedelta, datetime
+from datetime import date, timedelta, datetime, timezone
 from sqlalchemy.orm import Session
 from sqlalchemy import select
 import os
@@ -9,6 +9,7 @@ from .anomaly import is_three_sigma_window, pct_vs_weekday_baseline
 from .slack import send_slack_sync
 
 def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: float = 0.4):
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)  # store naive UTC
     services = [r[0] for r in db.execute(select(Cost.service).distinct())]
     latest = db.execute(select(Cost.day).order_by(Cost.day.desc()).limit(1)).scalar() or date.today()
     start = latest - timedelta(days=lookback_days)
@@ -49,7 +50,7 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
                     sev = "notice"
 
             a = Alert(
-            created_at=datetime.now(datetime.timezone.utc),
+            created_at= now_utc,
             rule_id="anomaly-basic",
             severity=sev,
             message=msg,
@@ -61,7 +62,8 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
                     Alert.rule_id == "anomaly-basic",
                     Alert.severity == ("warning" if (pct or 0) < 1.0 else "critical"),
                     Alert.message == msg,
-                    Alert.created_at >= datetime.now(datetime.timezone.utc) - timedelta(minutes=60),
+                    # before: Alert.created_at >= datetime.utcnow() - timedelta(minutes=60),
+                    Alert.created_at >= (now_utc - timedelta(minutes=60)),
                 )
             ).scalar()
 
