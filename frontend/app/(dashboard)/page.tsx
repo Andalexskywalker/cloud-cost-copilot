@@ -142,6 +142,9 @@ export default function Dashboard(){
         
       {/* Table */}
       <p>Total (current view): ${total.toFixed(2)}</p>
+      <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
+      <h2 className="text-lg font-semibold mb-2">Details</h2>
+      
       {loading ? (
         <div className="p-4 border rounded">Loading…</div>
       ) : (
@@ -160,7 +163,7 @@ export default function Dashboard(){
           </tbody>
         </table>
       )}
-      <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
+      
     </div>
     
   )
