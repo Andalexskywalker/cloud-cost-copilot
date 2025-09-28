@@ -7,9 +7,9 @@ def main(interval_seconds: int = 300):
         with SessionLocal() as s:
             try:
                 created = evaluate_and_save_alerts(s)
-                print(f"[worker] alerts created: {created}")
+                print(f"[worker] alerts created: {created}", flush=True)
             except Exception as e:
-                print("[worker] error:", e)
+                print("[worker] error:", e, flush=True)
         time.sleep(interval_seconds)
 
 if __name__ == "__main__":
