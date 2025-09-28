@@ -5,6 +5,9 @@ import { useEffect, useMemo, useState } from 'react'
 // app/(dashboard)/page.tsx  ->  ../../components/Chart
 import Chart from '../../components/Chart'
 import { fetchAggregate, fetchServices, type AggregateRow } from './lib/api'
+import ActiveAlertBanner from '../../components/ActiveAlertBanner'
+
+
 
 type Cost = { id:number; service:string; day:string; amount:number }
 
@@ -90,6 +93,7 @@ export default function Dashboard(){
   return (
     <div className="p-8 space-y-6">
       <h1 className="text-2xl font-bold">Cloud Cost Copilot</h1>
+      <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-end">
@@ -136,7 +140,7 @@ export default function Dashboard(){
       {/* Chart */}
       <h2 className="text-lg font-semibold mb-2">Daily total</h2>
       <Chart series={series} />
-
+        
       {/* Table */}
       <p>Total (current view): ${total.toFixed(2)}</p>
       {loading ? (
