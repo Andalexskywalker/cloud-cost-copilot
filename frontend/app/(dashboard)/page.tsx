@@ -93,7 +93,6 @@ export default function Dashboard(){
   return (
     <div className="p-8 space-y-6">
       <h1 className="text-2xl font-bold">Cloud Cost Copilot</h1>
-      <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4 items-end">
@@ -161,6 +160,8 @@ export default function Dashboard(){
           </tbody>
         </table>
       )}
+      <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
     </div>
+    
   )
 }
