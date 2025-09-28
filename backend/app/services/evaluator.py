@@ -39,11 +39,20 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
 
         if triggered:
             msg = f"{svc}: " + " & ".join(parts)
+            sev = "info"
+            if pct is not None:
+                if pct >= 1.0:    # ≥100% over baseline
+                    sev = "critical"
+                elif pct >= 0.5:  # ≥50%
+                    sev = "warning"
+                elif pct >= 0.25: # ≥25%
+                    sev = "notice"
+
             a = Alert(
-                created_at=datetime.now(datetime.timezone.utc),
-                rule_id="anomaly-basic",
-                severity="warning" if (pct or 0) < 1.0 else "critical",
-                message=msg,
+            created_at=datetime.now(datetime.timezone.utc),
+            rule_id="anomaly-basic",
+            severity=sev,
+            message=msg,
             )
             recent = db.execute(
                 select(func.count())
