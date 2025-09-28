@@ -15,6 +15,5 @@ def list_alerts(db: Session = Depends(get_db)):
             "rule_id": a.rule_id,
             "severity": a.severity,
             "message": a.message,
-        }
-        for a in rows
+        } for a in rows
     ]
