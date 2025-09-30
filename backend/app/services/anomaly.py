@@ -1,5 +1,6 @@
 from statistics import mean, pstdev
 
+
 def is_three_sigma_window(values: list[float]):
     if len(values) < 5:
         return False

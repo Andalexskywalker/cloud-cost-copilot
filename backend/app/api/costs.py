@@ -1,7 +1,9 @@
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import func
 from datetime import date
+
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
+from sqlalchemy.orm import Session
+
 from ..db import get_db
 from ..models import Cost
 from ..schemas import CostOut
@@ -9,7 +11,12 @@ from ..schemas import CostOut
 router = APIRouter(prefix="/costs", tags=["costs"])
 
 @router.get("/", response_model=list[CostOut])
-def list_costs(from_: date | None = None, to: date | None = None, service: str | None = None, db: Session = Depends(get_db)):
+def list_costs(
+    from_: date | None = None, 
+    to: date | None = None, 
+    service: str | None = None, 
+    db: Session = Depends(get_db)):
+
     q = db.query(Cost)
     if from_:
         q = q.filter(Cost.day >= from_)

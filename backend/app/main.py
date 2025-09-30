@@ -1,10 +1,11 @@
 from fastapi import FastAPI
-from sqlalchemy import text, select
-from .db import engine, Base
-from .core.config import settings
-from .api import costs, alerts
-from .services.ingest import seed_demo_costs
+from sqlalchemy import text
 from sqlalchemy.orm import Session
+
+from .api import alerts, costs
+from .core.config import settings
+from .db import Base, engine
+from .services.ingest import seed_demo_costs
 
 app = FastAPI(title="Cloud Cost Copilot")
 

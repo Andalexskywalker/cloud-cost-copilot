@@ -1,5 +1,7 @@
-from pydantic import BaseModel
 from datetime import date, datetime
+
+from pydantic import BaseModel
+
 
 class CostOut(BaseModel):
     id: int

@@ -1,6 +1,8 @@
 import time
+
 from ..db import SessionLocal
 from .evaluator import evaluate_and_save_alerts
+
 
 def main(interval_seconds: int = 300):
     while True:

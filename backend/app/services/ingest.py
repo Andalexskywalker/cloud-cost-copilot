@@ -1,8 +1,10 @@
-import pandas as pd
-from datetime import date, timedelta
-from sqlalchemy.orm import Session
-from ..models import Cost
 import random
+from datetime import date, timedelta
+
+import pandas as pd
+from sqlalchemy.orm import Session
+
+from ..models import Cost
 
 MOCK_SERVICES = ["EC2", "S3", "RDS", "Lambda"]
 

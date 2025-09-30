@@ -1,5 +1,7 @@
-from sqlalchemy import Column, Integer, String, Date, Numeric, DateTime, Text
+from sqlalchemy import Column, Date, DateTime, Integer, Numeric, String, Text
+
 from .db import Base
+
 
 class Cost(Base):
     __tablename__ = "costs"

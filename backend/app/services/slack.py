@@ -1,6 +1,7 @@
 import os
 import requests
 
+
 def send_slack_sync(text: str):
     """
     Post a simple message to Slack via Incoming Webhook.

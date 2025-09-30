@@ -9,7 +9,7 @@ from .anomaly import is_three_sigma_window, pct_vs_weekday_baseline
 from .slack import send_slack_sync
 
 def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: float = 0.4):
-    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)  # store naive UTC
+    
     services = [r[0] for r in db.execute(select(Cost.service).distinct())]
     latest = db.execute(select(Cost.day).order_by(Cost.day.desc()).limit(1)).scalar() or date.today()
     start = latest - timedelta(days=lookback_days)
