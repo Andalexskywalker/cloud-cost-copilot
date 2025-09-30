@@ -8,9 +8,8 @@ export const metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="pt">
+    <html lang="pt" className="dark">  {/* força dark mode */}
       <body>{children}</body>
     </html>
   )
 }
-

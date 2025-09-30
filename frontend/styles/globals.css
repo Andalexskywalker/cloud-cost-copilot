@@ -2,17 +2,19 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Background gradient + default dark palette */
+/* Tokens */
 :root {
   --card-bg: rgba(255,255,255,0.08);
   --panel-bg: rgba(255,255,255,0.06);
   --border: rgba(255,255,255,0.12);
 }
-html, body {
-  height: 100%;
-}
+
+html, body { height: 100%; }
+
+/* Dark base */
 body {
-  @apply dark text-neutral-100;
+  /* apenas util classes, sem 'dark' */
+  @apply text-neutral-100;
   background: radial-gradient(1200px 600px at -10% -10%, #5b7cfa33, transparent 60%),
               radial-gradient(1000px 600px at 110% -20%, #e959a233, transparent 60%),
               linear-gradient(180deg, #0c0c12 0%, #0e0e15 100%);
