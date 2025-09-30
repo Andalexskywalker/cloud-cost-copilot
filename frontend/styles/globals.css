@@ -1,3 +1,39 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Background gradient + default dark palette */
+:root {
+  --card-bg: rgba(255,255,255,0.08);
+  --panel-bg: rgba(255,255,255,0.06);
+  --border: rgba(255,255,255,0.12);
+}
+html, body {
+  height: 100%;
+}
+body {
+  @apply dark text-neutral-100;
+  background: radial-gradient(1200px 600px at -10% -10%, #5b7cfa33, transparent 60%),
+              radial-gradient(1000px 600px at 110% -20%, #e959a233, transparent 60%),
+              linear-gradient(180deg, #0c0c12 0%, #0e0e15 100%);
+}
+
+/* Glass cards */
+.card {
+  background: var(--card-bg);
+  @apply backdrop-blur-xl border rounded-2xl border-[color:var(--border)];
+}
+.panel {
+  background: var(--panel-bg);
+  @apply backdrop-blur-xl border rounded-xl border-[color:var(--border)];
+}
+
+/* Inputs */
+.input, select, .select {
+  @apply bg-transparent border rounded-md px-2 py-1 border-[color:var(--border)] focus:outline-none focus:ring-1 focus:ring-white/30;
+}
+
+/* Table */
+.table th, .table td { @apply py-2; }
+.table thead tr { @apply border-b border-[color:var(--border)] text-neutral-300; }
+.table tbody tr { @apply border-b border-[color:var(--border)]; }

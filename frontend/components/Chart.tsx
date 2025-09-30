@@ -16,7 +16,7 @@ export default function Chart({ series, w = 700, h = 240 }: { series: Series[]; 
   const minY = Math.min(...allY), maxY = Math.max(...allY)
   const minX = Math.min(...allX), maxX = Math.max(...allX)
   return (
-    <svg width={w} height={h} className="border rounded bg-white w-full">
+    <svg width={w} height={h} className="rounded-xl w-full">
       <g transform={`translate(${pad},${pad})`}>
         <line x1={0} y1={H} x2={W} y2={H} stroke="currentColor" opacity="0.2" />
         <line x1={0} y1={0} x2={0} y2={H} stroke="currentColor" opacity="0.2" />

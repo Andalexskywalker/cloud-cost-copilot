@@ -1,16 +1,15 @@
-// frontend/app/layout.tsx
-import "/styles/globals.css";
-import type { Metadata } from "next";
+import './styles/globals.css'
+import type { ReactNode } from 'react'
 
-export const metadata: Metadata = {
-  title: "Cloud Cost Copilot",
-  description: "Demo dashboard for cloud costs",
-};
+export const metadata = {
+  title: 'Cloud Cost Copilot',
+  description: 'Detecta anomalias de custos cloud com alertas.',
+}
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen bg-white text-black">{children}</body>
+    <html lang="pt">
+      <body>{children}</body>
     </html>
-  );
+  )
 }
