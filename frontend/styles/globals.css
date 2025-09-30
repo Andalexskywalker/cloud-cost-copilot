@@ -13,7 +13,6 @@ html, body { height: 100%; }
 
 /* Dark base */
 body {
-  /* apenas util classes, sem 'dark' */
   @apply text-neutral-100;
   background: radial-gradient(1200px 600px at -10% -10%, #5b7cfa33, transparent 60%),
               radial-gradient(1000px 600px at 110% -20%, #e959a233, transparent 60%),
@@ -30,12 +29,34 @@ body {
   @apply backdrop-blur-xl border rounded-xl border-[color:var(--border)];
 }
 
-/* Inputs */
-.input, select, .select {
-  @apply bg-transparent border rounded-md px-2 py-1 border-[color:var(--border)] focus:outline-none focus:ring-1 focus:ring-white/30;
+/* Inputs / selects coerentes com dark */
+input[type="text"],
+input[type="date"],
+input[type="number"],
+select,
+.input,
+.select {
+  background-color: rgba(255,255,255,0.06);
+  color: #f5f5f5;
+  @apply border rounded-md px-2 py-1 border-[color:var(--border)] focus:outline-none focus:ring-1 focus:ring-white/30;
+}
+input::placeholder { color: #cfcfd4; opacity: .6; }
+
+/* Ícone do date picker visível no dark */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(1) opacity(0.8);
 }
 
-/* Table */
+/* Chrome autofill branco → força dark bg */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: #f5f5f5;
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.06) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* Tabela */
 .table th, .table td { @apply py-2; }
 .table thead tr { @apply border-b border-[color:var(--border)] text-neutral-300; }
 .table tbody tr { @apply border-b border-[color:var(--border)]; }

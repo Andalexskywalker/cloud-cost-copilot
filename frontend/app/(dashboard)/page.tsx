@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useState } from 'react'
 
-// imports relativos (sem alias @) para evitar configs extra
+// imports relativos (sem alias @)
 import Chart from '../../components/Chart'
 import ActiveAlertBanner from '../../components/ActiveAlertBanner'
 import StatCard from '../../components/StatCard'
@@ -10,6 +10,9 @@ import EmptyState from '../../components/EmptyState'
 import { fetchAggregate, fetchServices, type AggregateRow } from './lib/api'
 
 type Cost = { id:number; service:string; day:string; amount:number }
+
+// usar API_BASE diretamente (sem rewrites)
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000'
 
 function useQueryState() {
   const [params, setParams] = useState(
@@ -71,13 +74,13 @@ export default function Dashboard(){
       headers['authorization'] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
     }
 
-    // tabela
-    fetch('/api/costs' + (q.toString() ? `?${q.toString()}` : ''), { cache: 'no-store', headers })
+    // TABELA — chamada direta ao backend (NOTA: /costs/ com barra final!)
+    fetch(`${API_BASE}/costs/${q.toString() ? `?${q.toString()}` : ''}`, { cache: 'no-store', headers })
       .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
       .then(setRows)
       .catch(e => { setRows([]); setError(`Failed to load table (${e.message})`) })
 
-    // aggregate para o gráfico
+    // AGGREGATE para o gráfico (usa helpers que já chamam o backend direto)
     fetchAggregate({ from, to, service: serviceParam })
       .then(setAgg)
       .catch(e => { setAgg([]); setError(prev => prev ?? `Failed to load chart (${e.message})`) })
@@ -107,7 +110,7 @@ export default function Dashboard(){
         {/* Coluna esquerda: filtros + métricas */}
         <aside className="lg:col-span-4 xl:col-span-3">
           <div className="sticky top-4 space-y-4">
-            <div className="p-4 border rounded">
+            <div className="p-4 panel">
               <h2 className="text-sm font-semibold mb-3">Filters</h2>
               <div className="space-y-3">
                 <div>
@@ -116,7 +119,7 @@ export default function Dashboard(){
                     type="date"
                     value={from}
                     onChange={e => set('from', e.target.value || null)}
-                    className="w-full border rounded px-2 py-1"
+                    className="w-full input"
                   />
                 </div>
                 <div>
@@ -125,7 +128,7 @@ export default function Dashboard(){
                     type="date"
                     value={to}
                     onChange={e => set('to', e.target.value || null)}
-                    className="w-full border rounded px-2 py-1"
+                    className="w-full input"
                   />
                 </div>
                 <div>
@@ -133,7 +136,7 @@ export default function Dashboard(){
                   <select
                     value={serviceParam || (services[0] ?? '')}
                     onChange={e => set('service', e.target.value || null)}
-                    className="w-full border rounded px-2 py-1"
+                    className="w-full input"
                     disabled={!services.length}
                   >
                     {!services.length && <option>Loading…</option>}
@@ -143,7 +146,7 @@ export default function Dashboard(){
                 {(from || to || serviceParam) && (
                   <button
                     onClick={() => { set('from', null); set('to', null); set('service', null) }}
-                    className="w-full border rounded px-3 py-1"
+                    className="w-full input"
                   >
                     Reset
                   </button>
@@ -169,7 +172,7 @@ export default function Dashboard(){
             to={to || undefined}
           />
 
-          <section className="p-4 border rounded">
+          <section className="p-4 panel">
             <h2 className="text-sm font-semibold mb-2">Cost over time</h2>
             {loading
               ? <LoadingBlock height={260}/>
@@ -180,7 +183,7 @@ export default function Dashboard(){
             }
           </section>
 
-          <section className="p-4 border rounded">
+          <section className="p-4 panel">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-sm font-semibold">Details</h2>
               <span className="text-xs opacity-70">{rows.length} rows</span>
@@ -189,7 +192,7 @@ export default function Dashboard(){
               <LoadingBlock height={160}/>
             ) : rows.length ? (
               <div className="overflow-auto">
-                <table className="min-w-full text-sm">
+                <table className="table min-w-full text-sm">
                   <thead>
                     <tr className="text-left border-b"><th>Day</th><th>Service</th><th>Amount</th></tr>
                   </thead>
