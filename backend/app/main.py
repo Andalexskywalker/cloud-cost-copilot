@@ -1,12 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status, Header
 from sqlalchemy import text
 from sqlalchemy.orm import Session
-
 from .api import alerts, costs
 from .core.config import settings
 from .db import Base, engine
 from .services.ingest import seed_demo_costs
-from fastapi import Depends, HTTPException, status, Header
+from fastapi.middleware.cors import CORSMiddleware
 from .core.config import settings
 
 def require_token(authorization: str | None = Header(default=None)):
@@ -27,10 +26,16 @@ def init_db():
             if not db.execute(text("SELECT 1 FROM costs LIMIT 1")).fetchone():
                 seed_demo_costs(db)
 
-
-app.include_router(costs.router)
-app.include_router(alerts.router)
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",              # local dev
+        "https://your-frontend.onrender.com", # <- replace with your real frontend URL
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/health")
 def health():
