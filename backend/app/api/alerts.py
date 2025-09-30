@@ -6,6 +6,7 @@ from ..models import Alert
 
 router = APIRouter(prefix="/alerts", tags=["alerts"])
 
+
 @router.get("/")
 def list_alerts(db: Session = Depends(get_db)):
     rows = db.query(Alert).order_by(Alert.created_at.desc()).limit(100).all()

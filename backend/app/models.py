@@ -10,8 +10,9 @@ class Cost(Base):
     service = Column(String(100), index=True)
     usage_type = Column(String(100), index=True)
     day = Column(Date, index=True)
-    amount = Column(Numeric(12,2))
+    amount = Column(Numeric(12, 2))
     currency = Column(String(3), default="USD")
+
 
 class Alert(Base):
     __tablename__ = "alerts"

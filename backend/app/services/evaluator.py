@@ -1,17 +1,16 @@
-from datetime import date, timedelta, datetime, timezone
-from sqlalchemy.orm import Session
-from sqlalchemy import select
-import os
-from sqlalchemy import select, func
+from datetime import date, datetime, timedelta, timezone
 
-from ..models import Cost, Alert
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from ..models import Alert, Cost
 from .anomaly import is_three_sigma_window, pct_vs_weekday_baseline
-from .slack import send_slack_sync
+
 
 def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: float = 0.4):
-    
     services = [r[0] for r in db.execute(select(Cost.service).distinct())]
-    latest = db.execute(select(Cost.day).order_by(Cost.day.desc()).limit(1)).scalar() or date.today()
+    stmt = select(Cost.day).order_by(Cost.day.desc()).limit(1)
+    latest = db.execute(stmt).scalar() or date.today()
     start = latest - timedelta(days=lookback_days)
     created = 0
     for svc in services:
@@ -52,22 +51,23 @@ def evaluate_and_save_alerts(db: Session, lookback_days: int = 30, min_pct: floa
             msg = f"{svc}: " + " & ".join(parts)
 
             a = Alert(
-            created_at=datetime.now(timezone.utc).replace(tzinfo=None),
-            rule_id="anomaly-basic",
-            severity=sev,
-            message=msg,
+                created_at=datetime.now(timezone.utc).replace(tzinfo=None),
+                rule_id="anomaly-basic",
+                severity=sev,
+                message=msg,
             )
             db.add(a)
 
             # Slack with deep link
-            from .slack import send_slack_sync
             import os
+
+            from .slack import send_slack_sync
+
             fe = os.getenv("FRONTEND_BASE", "http://localhost:3000")
             link = f"{fe}?service={svc}&from={start.isoformat()}&to={latest.isoformat()}"
             send_slack_sync(f":rotating_light: {msg}\nInspect: {link}")
 
             created += 1
-
 
     if created:
         db.commit()

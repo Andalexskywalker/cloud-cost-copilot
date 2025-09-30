@@ -1,6 +1,6 @@
 __all__ = [
-"ingest",
-"anomaly",
-"slack",
-"worker",
+    "ingest",
+    "anomaly",
+    "slack",
+    "worker",
 ]

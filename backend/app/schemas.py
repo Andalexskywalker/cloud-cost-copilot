@@ -15,6 +15,7 @@ class CostOut(BaseModel):
     class Config:
         from_attributes = True
 
+
 class AlertOut(BaseModel):
     id: int
     created_at: datetime

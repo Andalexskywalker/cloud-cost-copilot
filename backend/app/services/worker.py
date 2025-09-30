@@ -14,5 +14,6 @@ def main(interval_seconds: int = 300):
                 print("[worker] error:", e, flush=True)
         time.sleep(interval_seconds)
 
+
 if __name__ == "__main__":
     main()

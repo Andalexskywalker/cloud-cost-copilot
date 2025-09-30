@@ -6,4 +6,5 @@ class Settings(BaseSettings):
     DEMO_MODE: int = 1
     SLACK_WEBHOOK_URL: str | None = None
 
+
 settings = Settings()  # reads from env
