@@ -137,9 +137,9 @@ export default function Dashboard(){
       </div>
 
       {/* Chart */}
-      <h2 className="text-lg font-semibold mb-2">Daily total</h2>
+      <h2 className="text-lg font-semibold mb-2">Cost over time</h2>
       <Chart series={series} />
-        
+      <h2 className="text-lg font-semibold mb-2">Daily total</h2>
       {/* Table */}
       <p>Total (current view): ${total.toFixed(2)}</p>
       <ActiveAlertBanner service={serviceParam || undefined} from={from || undefined} to={to || undefined} />
