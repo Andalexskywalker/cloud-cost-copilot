@@ -68,8 +68,11 @@ export default function Dashboard(){
     if (serviceParam) q.set('service', serviceParam)
 
     // table
-    fetch('/api/costs' + (q.toString() ? `?${q.toString()}` : ''), { cache: 'no-store' })
-      .then(r => r.json()).then(setRows).catch(() => setRows([]))
+  const headers: HeadersInit = {}
+  if (process.env.NEXT_PUBLIC_API_TOKEN)
+  headers["authorization"] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
+  fetch('/api/costs' + (q.toString() ? `?${q.toString()}` : ''), { cache: 'no-store', headers })
+    .then(r => r.json()).then(setRows).catch(() => setRows([]))
 
     // chart aggregate
     fetchAggregate({ from, to, service: serviceParam })

@@ -5,7 +5,10 @@ export async function fetchAggregate(params: { from?: string; to?: string; servi
   if (params.from) q.set("from_", params.from)
   if (params.to) q.set("to", params.to)
   if (params.service) q.set("service", params.service)
-  const res = await fetch("/api/costs/aggregate" + (q.toString() ? `?${q}` : ""), { cache: "no-store" })
+  const headers: HeadersInit = {}
+  if (process.env.NEXT_PUBLIC_API_TOKEN)
+    headers["authorization"] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
+    const res = await fetch("/api/costs/aggregate" + (q.toString() ? `?${q}` : ""), { cache: "no-store", headers })
   if (!res.ok) throw new Error("aggregate fetch failed")
   return (await res.json()) as AggregateRow[]
 }
