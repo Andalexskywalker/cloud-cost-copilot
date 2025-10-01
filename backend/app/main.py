@@ -15,6 +15,13 @@ def require_token(authorization: str | None = Header(default=None)):
 
 
 app = FastAPI(title="Cloud Cost Copilot")
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.on_event("startup")
@@ -25,17 +32,6 @@ def init_db():
             # if empty, seed demo data
             if not db.execute(text("SELECT 1 FROM costs LIMIT 1")).fetchone():
                 seed_demo_costs(db)
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3000",              # local dev
-        "https://your-frontend.onrender.com", # <- replace with your real frontend URL
-    ],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 @app.get("/health")
 def health():

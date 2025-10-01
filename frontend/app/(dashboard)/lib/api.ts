@@ -1,12 +1,14 @@
 export type AggregateRow = { day: string; service: string; total: number }
 
-// Call backend directly from the browser. For local dev the browser must reach *localhost:8000*.
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
 
 function authHeaders(): HeadersInit {
   const h: HeadersInit = {};
-  if (process.env.NEXT_PUBLIC_API_TOKEN) {
-    h["authorization"] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`;
+  const tok = process.env.NEXT_PUBLIC_API_TOKEN;
+  if (tok) {
+    h["authorization"] = `Bearer ${tok}`;
+    h["x-api-token"] = tok;
+    h["x-api-key"] = tok;
   }
   return h;
 }
@@ -19,14 +21,10 @@ export async function fetchAggregate(params: { from?: string; to?: string; servi
 
   const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
   const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${text}`);
-  }
+  if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=> "")}`);
   return (await res.json()) as AggregateRow[];
 }
 
-/** Distinct services for the date window (no service filter) */
 export async function fetchServices(params: { from?: string; to?: string }) {
   const q = new URLSearchParams();
   if (params.from) q.set("from_", params.from);
@@ -34,10 +32,7 @@ export async function fetchServices(params: { from?: string; to?: string }) {
 
   const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
   const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(`${res.status} ${text}`);
-  }
+  if (!res.ok) throw new Error(`${res.status} ${await res.text().catch(()=> "")}`);
   const rows = (await res.json()) as AggregateRow[];
   return Array.from(new Set(rows.map(r => r.service))).sort();
 }

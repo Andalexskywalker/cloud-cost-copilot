@@ -12,7 +12,21 @@ import { fetchAggregate, fetchServices, type AggregateRow } from './lib/api'
 type Cost = { id:number; service:string; day:string; amount:number }
 
 // usar API_BASE diretamente (sem rewrites)
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000'
+// top of page.tsx
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8000'
+
+// put this helper near the top so both table + helpers can share it
+function authHeaders(): HeadersInit {
+  const h: HeadersInit = {}
+  const tok = process.env.NEXT_PUBLIC_API_TOKEN
+  if (tok) {
+    h['authorization'] = `Bearer ${tok}`
+    h['x-api-token'] = tok
+    h['x-api-key'] = tok
+  }
+  return h
+}
+
 
 function useQueryState() {
   const [params, setParams] = useState(
@@ -69,16 +83,14 @@ export default function Dashboard(){
     if (to) q.set('to', to)
     if (serviceParam) q.set('service', serviceParam)
 
-    const headers: HeadersInit = {}
-    if (process.env.NEXT_PUBLIC_API_TOKEN) {
-      headers['authorization'] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
-    }
-
-    // TABELA — chamada direta ao backend (NOTA: /costs/ com barra final!)
-    fetch(`${API_BASE}/costs/${q.toString() ? `?${q.toString()}` : ''}`, { cache: 'no-store', headers })
+    const headers = authHeaders()
+    
+    // NOTE: no trailing slash after /costs
+    fetch(`${API_BASE}/costs${q.toString() ? `?${q.toString()}` : ''}`, { cache: 'no-store', headers })
       .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
       .then(setRows)
       .catch(e => { setRows([]); setError(`Failed to load table (${e.message})`) })
+
 
     // AGGREGATE para o gráfico (usa helpers que já chamam o backend direto)
     fetchAggregate({ from, to, service: serviceParam })
