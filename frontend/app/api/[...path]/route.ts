@@ -1,23 +1,44 @@
-// frontend/app/api/[...path]/route.ts
-import { NextRequest } from "next/server"
+﻿import { NextRequest } from "next/server"
 
-const BACKEND_BASE = process.env.BACKEND_BASE || "http://backend:8000"
+export const runtime = "nodejs"
+export const dynamic = "force-dynamic"
 
-async function proxy(req: NextRequest, params: { path: string[] }, method: string) {
+const API_BASE  = process.env.NEXT_PUBLIC_API_BASE  ?? "http://backend:8000"
+const API_TOKEN = process.env.NEXT_PUBLIC_API_TOKEN ?? ""
+
+function forwardHeaders(req: NextRequest) {
+  const h = new Headers()
+  const accept = req.headers.get("accept"); if (accept) h.set("accept", accept)
+  const ct     = req.headers.get("content-type"); if (ct) h.set("content-type", ct)
+  if (API_TOKEN) h.set("authorization", `Bearer ${API_TOKEN}`)
+  return h
+}
+
+async function proxy(req: NextRequest, path: string[]) {
   const url = new URL(req.url)
-  const target = `${BACKEND_BASE}/${params.path.join("/")}${url.search}`
-  const init: RequestInit = { method, headers: req.headers as any }
-  if (method !== "GET" && method !== "HEAD") init.body = req.body as any
+  const target = `${API_BASE}/${path.join("/")}${url.search}`
+
+  const init: RequestInit = {
+    method: req.method,
+    headers: forwardHeaders(req),
+    body: (req.method === "GET" || req.method === "HEAD") ? undefined : await req.arrayBuffer(),
+    redirect: "manual",
+    cache: "no-store",
+  }
+
   const res = await fetch(target, init)
-  return new Response(await res.text(), { status: res.status, headers: res.headers })
+  const buf = new Uint8Array(await res.arrayBuffer())
+  const headers = new Headers(res.headers)
+  headers.delete("set-cookie")
+  headers.delete("transfer-encoding")
+  headers.delete("content-encoding")
+  headers.set("content-length", String(buf.byteLength))
+  return new Response(buf, { status: res.status, headers })
 }
 
-export async function GET(req: NextRequest, { params }: { params: { path: string[] }}) {
-  return proxy(req, params, "GET")
-}
-export async function POST(req: NextRequest, { params }: { params: { path: string[] }}) {
-  return proxy(req, params, "POST")
-}
-export const PUT = POST
-export const PATCH = POST
-export const DELETE = POST
+export const GET    = (req: NextRequest, { params }: { params: { path: string[] } }) => proxy(req, params.path)
+export const POST   = GET as any
+export const PUT    = GET as any
+export const PATCH  = GET as any
+export const DELETE = GET as any
+export const HEAD   = GET as any
