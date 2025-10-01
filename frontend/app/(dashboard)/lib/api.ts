@@ -1,7 +1,7 @@
 export type AggregateRow = { day: string; service: string; total: number }
 
-// Call backend directly from the browser. For local dev the browser must reach *localhost:8000*.
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+// Sempre via o proxy do Next. O rewrite envia isto para o BACKEND.
+const API_ROOT = "/api";
 
 function authHeaders(): HeadersInit {
   const h: HeadersInit = {};
@@ -17,7 +17,7 @@ export async function fetchAggregate(params: { from?: string; to?: string; servi
   if (params.to) q.set("to", params.to);
   if (params.service) q.set("service", params.service);
 
-  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
+  const url = `${API_ROOT}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
   const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
@@ -26,13 +26,13 @@ export async function fetchAggregate(params: { from?: string; to?: string; servi
   return (await res.json()) as AggregateRow[];
 }
 
-/** Distinct services for the date window (no service filter) */
+/** Serviços distintos no intervalo (sem filtrar por serviço) */
 export async function fetchServices(params: { from?: string; to?: string }) {
   const q = new URLSearchParams();
   if (params.from) q.set("from_", params.from);
   if (params.to) q.set("to", params.to);
 
-  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
+  const url = `${API_ROOT}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
   const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
   if (!res.ok) {
     const text = await res.text().catch(() => "");
