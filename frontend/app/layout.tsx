@@ -1,17 +1,15 @@
 import '../styles/globals.css'
-import React from 'react'
+import type { ReactNode } from 'react'
+
 export const metadata = {
   title: 'Cloud Cost Copilot',
   description: 'Detecta anomalias de custos cloud com alertas.',
 }
 
-export default function Layout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
-      <body className="min-h-screen">
-        <div className="min-h-screen">{children}</div>
-      </body>
+    <html lang="pt">
+      <body>{children}</body>
     </html>
   )
 }
-
