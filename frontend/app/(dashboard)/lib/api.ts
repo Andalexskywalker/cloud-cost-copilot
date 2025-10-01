@@ -1,23 +1,43 @@
 export type AggregateRow = { day: string; service: string; total: number }
 
-export async function fetchAggregate(params: { from?: string; to?: string; service?: string }) {
-  const q = new URLSearchParams()
-  if (params.from) q.set("from_", params.from)
-  if (params.to) q.set("to", params.to)
-  if (params.service) q.set("service", params.service)
-  const res = await fetch("/api/costs/aggregate" + (q.toString() ? `?${q}` : ""), { cache: "no-store" })
-  if (!res.ok) throw new Error("aggregate fetch failed")
-  return (await res.json()) as AggregateRow[]
+// Call backend directly from the browser. For local dev the browser must reach *localhost:8000*.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000";
+
+function authHeaders(): HeadersInit {
+  const h: HeadersInit = {};
+  if (process.env.NEXT_PUBLIC_API_TOKEN) {
+    h["authorization"] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`;
+  }
+  return h;
 }
 
-/** Get distinct services for the current date window (no service filter). */
+export async function fetchAggregate(params: { from?: string; to?: string; service?: string }) {
+  const q = new URLSearchParams();
+  if (params.from) q.set("from_", params.from);
+  if (params.to) q.set("to", params.to);
+  if (params.service) q.set("service", params.service);
+
+  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
+  const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${text}`);
+  }
+  return (await res.json()) as AggregateRow[];
+}
+
+/** Distinct services for the date window (no service filter) */
 export async function fetchServices(params: { from?: string; to?: string }) {
-  const q = new URLSearchParams()
-  if (params.from) q.set("from_", params.from)
-  if (params.to) q.set("to", params.to)
-  // NOTE: no `service` here on purpose
-  const res = await fetch("/api/costs/aggregate" + (q.toString() ? `?${q}` : ""), { cache: "no-store" })
-  if (!res.ok) throw new Error("services fetch failed")
-  const rows = (await res.json()) as AggregateRow[]
-  return Array.from(new Set(rows.map(r => r.service))).sort()
+  const q = new URLSearchParams();
+  if (params.from) q.set("from_", params.from);
+  if (params.to) q.set("to", params.to);
+
+  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`;
+  const res = await fetch(url, { cache: "no-store", headers: authHeaders() });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(`${res.status} ${text}`);
+  }
+  const rows = (await res.json()) as AggregateRow[];
+  return Array.from(new Set(rows.map(r => r.service))).sort();
 }
