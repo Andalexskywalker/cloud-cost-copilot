@@ -1,41 +1,59 @@
+// frontend/app/(dashboard)/page.tsx
 'use client'
-import { useEffect, useMemo, useState } from 'react'
 
-// imports relativos (sem alias @)
+import { Suspense, useEffect, useMemo, useState } from 'react'
+import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+
+// componentes (caminhos relativos)
 import Chart from '../../components/Chart'
 import ActiveAlertBanner from '../../components/ActiveAlertBanner'
 import StatCard from '../../components/StatCard'
 import LoadingBlock from '../../components/LoadingBlock'
 import EmptyState from '../../components/EmptyState'
-import { fetchAggregate, fetchServices, type AggregateRow } from './lib/api'
+
+// API helpers
+import { fetchAggregate, fetchCosts, fetchServices, type AggregateRow } from './lib/api'
+
+export const dynamic = 'force-dynamic'
+export const fetchCache = 'force-no-store'
+export const dynamicParams = true
 
 type Cost = { id:number; service:string; day:string; amount:number }
 
-// usar API_BASE diretamente (sem rewrites)
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://backend:8000'
-
-function useQueryState() {
-  const [params, setParams] = useState(
-    () => new URLSearchParams(typeof window !== 'undefined' ? window.location.search : '')
+/** Shell com Suspense p/ permitir useSearchParams dentro do conteúdo */
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="p-8">
+        <h1 className="text-2xl font-bold">Cloud Cost Copilot</h1>
+        <div className="mt-6 p-4 panel">Loading…</div>
+      </div>
+    }>
+      <DashboardContent />
+    </Suspense>
   )
-  function set(k: string, v: string | null) {
-    const p = new URLSearchParams(params)
-    if (v) p.set(k, v); else p.delete(k)
-    setParams(p)
-    if (typeof window !== 'undefined') {
-      const url = `${window.location.pathname}?${p.toString()}`
-      window.history.replaceState(null, '', url)
-    }
-  }
-  return { params, set }
 }
 
-export default function Dashboard(){
-  const { params, set } = useQueryState()
+function useQuery() {
+  const router = useRouter()
+  const pathname = usePathname()
+  const searchParams = useSearchParams()
+  const get = (k: string) => searchParams?.get(k) ?? ''
+  function set(k: string, v: string | null) {
+    const p = new URLSearchParams(searchParams?.toString() || '')
+    if (v) p.set(k, v); else p.delete(k)
+    const qs = p.toString()
+    router.replace(`${pathname}${qs ? `?${qs}` : ''}`, { scroll: false })
+  }
+  return { get, set }
+}
 
-  const from = params.get('from') ?? ''
-  const to = params.get('to') ?? ''
-  const serviceParam = params.get('service') ?? ''
+function DashboardContent() {
+  const query = useQuery()
+
+  const from = query.get('from')
+  const to = query.get('to')
+  const serviceParam = query.get('service')
 
   const [rows, setRows] = useState<Cost[]>([])
   const [loading, setLoading] = useState(true)
@@ -43,51 +61,60 @@ export default function Dashboard(){
   const [services, setServices] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
-  // 1) Carregar serviços disponíveis apenas pelo intervalo (sem filtrar por serviço)
+  // -------- services loading state + race guard ----------
+  const [svcLoading, setSvcLoading] = useState(false)
+  const [svcError, setSvcError] = useState<string|null>(null)
+
   useEffect(() => {
-    fetchServices({ from, to })
-      .then((list) => {
+    let alive = true
+    const ac = new AbortController()
+    ;(async () => {
+      setSvcLoading(true)
+      setSvcError(null)
+      try {
+        const list = await fetchServices({ from, to, signal: ac.signal })
+        if (!alive) return
         setServices(list)
+
+        // apenas corrige o parâmetro quando tens lista válida
         const current = serviceParam
         if (list.length && (!current || !list.includes(current))) {
-          set('service', list[0])
-        } else if (!list.length && current) {
-          set('service', null)
+          query.set('service', list[0])
         }
-      })
-      .catch(() => setServices([]))
+      } catch (e: any) {
+        if (!alive) return
+        setServices([])
+        setSvcError(e?.message || 'Failed to load services')
+      } finally {
+        if (alive) setSvcLoading(false)
+      }
+    })()
+    return () => { alive = false; ac.abort() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [from, to]) // não depender de serviceParam aqui!
+  }, [from, to]) // não depender de serviceParam
 
-  // 2) Tabela + aggregate sempre que filtros mudam (inclui serviço)
+  // -------- table + aggregate when filters change --------
   useEffect(() => {
+    let alive = true
+    const ac1 = new AbortController()
+    const ac2 = new AbortController()
     setLoading(true)
     setError(null)
 
-    const q = new URLSearchParams()
-    if (from) q.set('from_', from)   // backend espera from_
-    if (to) q.set('to', to)
-    if (serviceParam) q.set('service', serviceParam)
+    const tableP = fetchCosts({ from, to, service: serviceParam, signal: ac1.signal })
+      .then((data) => { if (alive) setRows(data) })
+      .catch((e: any) => { if (alive) { setRows([]); setError(prev => prev ?? `Failed to load table (${e.message})`) } })
 
-    const headers: HeadersInit = {}
-    if (process.env.NEXT_PUBLIC_API_TOKEN) {
-      headers['authorization'] = `Bearer ${process.env.NEXT_PUBLIC_API_TOKEN}`
-    }
+    const aggP = fetchAggregate({ from, to, service: serviceParam, signal: ac2.signal })
+      .then((data) => { if (alive) setAgg(data) })
+      .catch((e: any) => { if (alive) { setAgg([]); setError(prev => prev ?? `Failed to load chart (${e.message})`) } })
 
-    // TABELA — chamada direta ao backend (NOTA: /costs/ com barra final!)
-    fetch(`${API_BASE}/costs/${q.toString() ? `?${q.toString()}` : ''}`, { cache: 'no-store', headers })
-      .then(r => r.ok ? r.json() : Promise.reject(new Error(String(r.status))))
-      .then(setRows)
-      .catch(e => { setRows([]); setError(`Failed to load table (${e.message})`) })
+    Promise.allSettled([tableP, aggP]).finally(() => { if (alive) setLoading(false) })
 
-    // AGGREGATE para o gráfico (usa helpers que já chamam o backend direto)
-    fetchAggregate({ from, to, service: serviceParam })
-      .then(setAgg)
-      .catch(e => { setAgg([]); setError(prev => prev ?? `Failed to load chart (${e.message})`) })
-      .finally(() => setLoading(false))
+    return () => { alive = false; ac1.abort(); ac2.abort() }
   }, [from, to, serviceParam])
 
-  // 3) Série do gráfico
+  // -------- chart series --------
   const series = useMemo(() => {
     const filtered = agg
       .filter(r => !serviceParam || r.service === serviceParam)
@@ -97,7 +124,7 @@ export default function Dashboard(){
     return [{ name, points }]
   }, [agg, serviceParam])
 
-  const total = rows.reduce((s, x) => s + (x.amount ?? 0), 0)
+  const total = useMemo(() => rows.reduce((s, x) => s + (x.amount ?? 0), 0), [rows])
 
   return (
     <div className="p-6 md:p-8">
@@ -107,7 +134,7 @@ export default function Dashboard(){
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Coluna esquerda: filtros + métricas */}
+        {/* coluna esquerda: filtros + métricas */}
         <aside className="lg:col-span-4 xl:col-span-3">
           <div className="sticky top-4 space-y-4">
             <div className="p-4 panel">
@@ -118,7 +145,7 @@ export default function Dashboard(){
                   <input
                     type="date"
                     value={from}
-                    onChange={e => set('from', e.target.value || null)}
+                    onChange={e => query.set('from', e.target.value || null)}
                     className="w-full input"
                   />
                 </div>
@@ -127,7 +154,7 @@ export default function Dashboard(){
                   <input
                     type="date"
                     value={to}
-                    onChange={e => set('to', e.target.value || null)}
+                    onChange={e => query.set('to', e.target.value || null)}
                     className="w-full input"
                   />
                 </div>
@@ -135,17 +162,22 @@ export default function Dashboard(){
                   <label className="block text-xs font-medium">Service</label>
                   <select
                     value={serviceParam || (services[0] ?? '')}
-                    onChange={e => set('service', e.target.value || null)}
+                    onChange={e => query.set('service', e.target.value || null)}
                     className="w-full input"
-                    disabled={!services.length}
+                    disabled={svcLoading}
                   >
-                    {!services.length && <option>Loading…</option>}
-                    {services.map(s => <option key={s} value={s}>{s}</option>)}
+                    {svcLoading && <option value="">{'Loading…'}</option>}
+                    {!svcLoading && services.length === 0 && (
+                      <option value="">{'No services for this range'}</option>
+                    )}
+                    {!svcLoading && services.map(s => <option key={s} value={s}>{s}</option>)}
                   </select>
+                  {svcError && <p className="text-xs text-red-300 mt-1">{svcError}</p>}
                 </div>
+
                 {(from || to || serviceParam) && (
                   <button
-                    onClick={() => { set('from', null); set('to', null); set('service', null) }}
+                    onClick={() => { query.set('from', null); query.set('to', null); query.set('service', null) }}
                     className="w-full input"
                   >
                     Reset
@@ -154,7 +186,7 @@ export default function Dashboard(){
               </div>
             </div>
 
-            {/* Métricas rápidas */}
+            {/* métricas rápidas */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard label="Total" value={`$${total.toFixed(2)}`} />
               <StatCard label="Service" value={serviceParam || '—'} />
@@ -164,7 +196,7 @@ export default function Dashboard(){
           </div>
         </aside>
 
-        {/* Coluna direita: alertas + gráfico + tabela */}
+        {/* coluna direita: alertas + gráfico + tabela */}
         <main className="lg:col-span-8 xl:col-span-9 space-y-4">
           <ActiveAlertBanner
             service={serviceParam || undefined}
@@ -213,7 +245,7 @@ export default function Dashboard(){
           </section>
 
           {error && (
-            <div className="p-3 border border-red-300 bg-red-50 text-sm rounded">
+            <div className="p-3 border border-red-500/40 bg-red-900/30 text-red-200 text-sm rounded">
               {error}
             </div>
           )}
