@@ -1,35 +1,37 @@
-import random
-from datetime import date, timedelta
+# backend/app/services/ingest.py
+from __future__ import annotations
 
-import pandas as pd
+from datetime import date, timedelta
+from typing import Any
+
+from sqlalchemy import insert
 from sqlalchemy.orm import Session
 
 from ..models import Cost
 
-MOCK_SERVICES = ["EC2", "S3", "RDS", "Lambda"]
+SERVICES = ("EC2", "Lambda", "RDS", "S3")
 
 
-def seed_demo_costs(db: Session, days: int = 60):
-    rng = random.Random(42)
-    start = date.today() - timedelta(days=days)
-    rows = []
-    for d in range(days):
-        day = start + timedelta(days=d)
-        for svc in MOCK_SERVICES:
-            base = {"EC2": 45, "S3": 10, "RDS": 20, "Lambda": 5}[svc]
-            noise = rng.normalvariate(0, base * 0.1)
-            rows.append(
-                {
-                    "provider": "aws",
-                    "service": svc,
-                    "usage_type": "OnDemand",
-                    "day": day,
-                    "amount": max(0.0, base + noise),
-                    "currency": "USD",
-                }
-            )
-    df = pd.DataFrame(rows)
-    if len(df) > 10:
-        df.loc[df.sample(1, random_state=1).index, "amount"] *= 3
-    db.bulk_insert_mappings(Cost, df.to_dict(orient="records"))
+def seed_demo_costs(db: Session, days: int = 60) -> None:
+    """Seed de dados demo: últimos `days` dias até ontem."""
+    end = date.today() - timedelta(days=1)          # ontem
+    start = end - timedelta(days=days - 1)
+
+    payload: list[dict[str, Any]] = []
+
+    import random
+
+    for i in range(days):
+        d = start + timedelta(days=i)
+        for svc in SERVICES:
+            base = {"EC2": 45.0, "Lambda": 5.0, "RDS": 20.0, "S3": 10.0}[svc]
+            jitter = random.uniform(-0.15, 0.15)     # ±15%
+            amount = round(base * (1.0 + jitter), 2)
+            payload.append({"day": d, "service": svc, "amount": amount})
+
+    if not payload:
+        return
+
+    # SQLAlchemy 2.0-friendly e “mypy-proof”
+    db.execute(insert(Cost.__table__), payload)
     db.commit()
