@@ -54,7 +54,7 @@ def init_db():
 
 
 def get_db():
-    db = SessionLocal()
+    db = Session()
     try:
         yield db
     finally:
