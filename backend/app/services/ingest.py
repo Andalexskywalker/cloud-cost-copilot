@@ -25,13 +25,13 @@ def seed_demo_costs(db: Session, days: int = 60) -> None:
         d = start + timedelta(days=i)
         for svc in SERVICES:
             base = {"EC2": 45.0, "Lambda": 5.0, "RDS": 20.0, "S3": 10.0}[svc]
-            jitter = random.uniform(-0.15, 0.15)     # ±15%
+            jitter = random.uniform(-0.15, 0.15)
             amount = round(base * (1.0 + jitter), 2)
             payload.append({"day": d, "service": svc, "amount": amount})
 
     if not payload:
         return
 
-    # SQLAlchemy 2.0-friendly e “mypy-proof”
-    db.execute(insert(Cost.__table__), payload)
+    # ✅ ORM insert (tipagem mypy-friendly e SQLA 2.0)
+    db.execute(insert(Cost), payload)
     db.commit()
