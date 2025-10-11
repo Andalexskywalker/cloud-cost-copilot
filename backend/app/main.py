@@ -1,13 +1,15 @@
 from typing import Optional
-from fastapi import FastAPI, Depends, HTTPException, status, Header
+
+from fastapi import Depends, FastAPI, Header, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy.orm import Session
 
 from .api import alerts, costs
 from .core.config import settings
 from .db import Base, engine
 from .services.ingest import seed_demo_costs
+
 
 # Single Session factory (reuse the same engine from .db)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)

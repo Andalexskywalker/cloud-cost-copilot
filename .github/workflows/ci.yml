@@ -5,8 +5,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
+      PYTHONPATH: backend
       DATABASE_URL: sqlite:///./test.db
-      DEMO_MODE: "0"   # skip seeding to keep tests fast
+      DEMO_MODE: "0"  # sem seeding para testes rápidos
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -16,11 +17,12 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt
       - name: Run tests
-        working-directory: backend
-        run: pytest -q
+        run: pytest -q backend/tests
 
   lint_and_types:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: backend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -29,9 +31,15 @@ jobs:
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt ruff mypy black
+      # 1) Ordena/normaliza imports (fix automático)
+      - name: Ruff (imports fix)
+        run: ruff check backend --select I --fix
+      # 2) Lint geral mas ignorando E501 (black controla line-length)
       - name: Ruff (lint)
-        run: ruff check backend
-      - name: Mypy (types)
-        run: mypy backend/app
+        run: ruff check backend --ignore E501
+      # 3) Formatação (sem alterar ficheiros)
       - name: Black (format check)
         run: black --check backend
+      # 4) Tipagem
+      - name: Mypy (types)
+        run: mypy backend/app
