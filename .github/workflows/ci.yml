@@ -1,3 +1,4 @@
+# .github/workflows/ci.yml
 name: ci
 on: [push, pull_request]
 
@@ -7,7 +8,7 @@ jobs:
     env:
       PYTHONPATH: backend
       DATABASE_URL: sqlite:///./test.db
-      DEMO_MODE: "0"  # sem seeding
+      DEMO_MODE: "0"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -32,15 +33,11 @@ jobs:
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt ruff mypy black
-      # 1) Organiza/normaliza imports (fix auto)
       - name: Ruff (imports fix)
         run: ruff check backend --select I --fix
-      # 2) Lint geral (ignora E501; o Black trata das linhas longas)
       - name: Ruff (lint)
         run: ruff check backend --ignore E501
-      # 3) Formatação
       - name: Black (format check)
         run: black --check backend
-      # 4) Tipos
       - name: Mypy (types)
         run: mypy backend/app

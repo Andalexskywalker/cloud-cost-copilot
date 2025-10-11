@@ -10,9 +10,6 @@ from .core.config import settings
 from .db import Base, engine
 from .services.ingest import seed_demo_costs
 
-# Single Session factory (reuse the same engine from .db)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
-
 
 def require_token(
     authorization: Optional[str] = Header(default=None),
