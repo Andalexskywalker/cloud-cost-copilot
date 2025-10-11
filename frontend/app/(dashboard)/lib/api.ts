@@ -1,7 +1,11 @@
 // frontend/app/(dashboard)/lib/api.ts
 export type AggregateRow = { day: string; service: string; total: number }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE
+//
+// Sempre via o proxy do Next. O rewrite envia isto para o BACKEND.
+// (next.config.mjs já aponta API_BASE -> http://backend:8000 dentro do Docker)
+//
+const API_ROOT = "/api"
 
 function authHeaders(): HeadersInit {
   const h: HeadersInit = {}
@@ -22,16 +26,15 @@ export async function fetchAggregate(params: {
   signal?: AbortSignal
 }) {
   const q = new URLSearchParams()
-  if (params.from) q.set("from_", params.from)
+  // usar 'from'/'to' — o backend tem alias "from"
+  if (params.from) q.set("from", params.from)
   if (params.to) q.set("to", params.to)
   if (params.service) q.set("service", params.service)
 
-  const url = `/api/costs/aggregate${q.toString() ? `?${q}` : ""}`
-
+  const url = `${API_ROOT}/costs/aggregate${q.toString() ? `?${q}` : ""}`
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),
-    mode: "cors",
     signal: params.signal,
   })
   if (!res.ok) {
@@ -49,15 +52,15 @@ export async function fetchCosts(params: {
   signal?: AbortSignal
 }) {
   const q = new URLSearchParams()
-  if (params.from) q.set("from_", params.from)
+  if (params.from) q.set("from", params.from)
   if (params.to) q.set("to", params.to)
   if (params.service) q.set("service", params.service)
 
-  const url = `/api/costs${q ? `?${q}` : ""}`
+  // barra final para evitar 307 redirect do FastAPI
+  const url = `${API_ROOT}/costs/${q.toString() ? `?${q}` : ""}`
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),
-    mode: "cors",
     signal: params.signal,
   })
   if (!res.ok) {
@@ -74,14 +77,14 @@ export async function fetchServices(params: {
   signal?: AbortSignal
 }) {
   const q = new URLSearchParams()
-  if (params.from) q.set("from_", params.from)
+  if (params.from) q.set("from", params.from)
   if (params.to) q.set("to", params.to)
 
-  const url = `/api/costs/aggregate${q.toString() ? `?${q}` : ""}`
+  // Reusa /aggregate e deduplica serviços
+  const url = `${API_ROOT}/costs/aggregate${q.toString() ? `?${q}` : ""}`
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),
-    mode: "cors",
     signal: params.signal,
   })
   if (!res.ok) {
