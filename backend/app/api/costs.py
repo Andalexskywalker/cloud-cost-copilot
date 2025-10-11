@@ -11,7 +11,7 @@ from ..schemas import CostOut
 router = APIRouter(prefix="/costs", tags=["costs"])
 
 
-@router.get("", response_model=list[CostOut])   # aceita /costs sem barra (evita 307)
+@router.get("", response_model=list[CostOut])  # aceita /costs sem barra (evita 307)
 @router.get("/", response_model=list[CostOut])
 def list_costs(
     from_: date | None = Query(None, alias="from"),
@@ -48,15 +48,8 @@ def aggregate_costs(
     if service:
         q = q.filter(Cost.service == service)
 
-    rows = (
-        q.group_by(Cost.day, Cost.service)
-        .order_by(Cost.day.asc(), Cost.service.asc())
-        .all()
-    )
-    return [
-        {"day": str(r.day), "service": r.service, "total": float(r.total)}
-        for r in rows
-    ]
+    rows = q.group_by(Cost.day, Cost.service).order_by(Cost.day.asc(), Cost.service.asc()).all()
+    return [{"day": str(r.day), "service": r.service, "total": float(r.total)} for r in rows]
 
 
 @router.get("/services", response_model=list[str])

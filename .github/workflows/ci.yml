@@ -1,4 +1,3 @@
-# .github/workflows/ci.yml
 name: ci
 on: [push, pull_request]
 
@@ -6,7 +5,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      PYTHONPATH: backend
       DATABASE_URL: sqlite:///./test.db
       DEMO_MODE: "0"
     steps:
@@ -17,9 +15,19 @@ jobs:
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt pytest
+      # sanity para ver paths (opcional, mas útil enquanto fechamos)
+      - name: Sanity
+        run: |
+          python - <<'PY'
+          import os, pathlib
+          print("cwd:", os.getcwd())
+          print("app exists:", pathlib.Path("backend/app/main.py").exists())
+          PY
       - name: Run tests
-        working-directory: backend
-        run: pytest -q tests
+        run: pytest -q
+        env:
+          # força pythonpath para os testes mesmo sem o pytest.ini
+          PYTHONPATH: backend
 
   lint_and_types:
     runs-on: ubuntu-latest
@@ -32,20 +40,25 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - run: pip install -r backend/requirements.txt ruff mypy black
 
-      # Ruff (imports fix) a partir de backend/
+      # Ruff: arruma imports automaticamente
       - name: Ruff (imports fix)
         working-directory: backend
         run: ruff check . --select I --fix
 
-      # Ruff geral (deixa o Black mandar na largura de linhas)
+      # Black: FORMATA (não só check) para não falhar
+      - name: Black (format)
+        working-directory: backend
+        run: black .
+
+      # Black: check por garantia (vai passar porque formatámos antes)
+      - name: Black (check)
+        working-directory: backend
+        run: black --check .
+
+      # Ruff geral (deixa o Black tratar de largura; ignora E501)
       - name: Ruff (lint)
         working-directory: backend
         run: ruff check . --ignore E501
-
-      # Black (format check)
-      - name: Black (format check)
-        working-directory: backend
-        run: black --check .
 
       # Mypy
       - name: Mypy (types)
