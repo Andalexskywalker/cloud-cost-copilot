@@ -8,3 +8,13 @@ build/
 
 
 
+.env
+.venv/
+__pycache__/
+.mypy_cache/
+node_modules/
+frontend/.next/
+dist/
+*.sqlite
+*.db
+*.zip
