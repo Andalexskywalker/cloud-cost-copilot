@@ -9,6 +9,8 @@ from .api import alerts, costs
 from .core.config import settings
 from .db import Base, engine
 from .services.ingest import seed_demo_costs
+from sqlalchemy import text
+from .db import engine
 
 
 def require_token(
@@ -66,9 +68,11 @@ def healthz():
     return {"status": "ok"}
 
 
-@app.get("/readyz")
-def readyz(db: Session = Depends(get_db)):
-    db.execute(text("SELECT 1"))
+@app.get("/readyz")  # readiness: app + DB
+def readyz():
+    # usa engine direto para evitar sessões sem bind
+    with engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
     return {"status": "ok"}
 
 
