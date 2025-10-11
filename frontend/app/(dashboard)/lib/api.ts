@@ -1,7 +1,7 @@
 // frontend/app/(dashboard)/lib/api.ts
 export type AggregateRow = { day: string; service: string; total: number }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8000"
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE
 
 function authHeaders(): HeadersInit {
   const h: HeadersInit = {}
@@ -26,7 +26,8 @@ export async function fetchAggregate(params: {
   if (params.to) q.set("to", params.to)
   if (params.service) q.set("service", params.service)
 
-  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`
+  const url = `/api/costs/aggregate${q.toString() ? `?${q}` : ""}`
+
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),
@@ -52,7 +53,7 @@ export async function fetchCosts(params: {
   if (params.to) q.set("to", params.to)
   if (params.service) q.set("service", params.service)
 
-  const url = `${API_BASE}/costs${q.toString() ? `?${q}` : ""}`
+  const url = `/api/costs${q ? `?${q}` : ""}`
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),
@@ -76,7 +77,7 @@ export async function fetchServices(params: {
   if (params.from) q.set("from_", params.from)
   if (params.to) q.set("to", params.to)
 
-  const url = `${API_BASE}/costs/aggregate${q.toString() ? `?${q}` : ""}`
+  const url = `/api/costs/aggregate${q.toString() ? `?${q}` : ""}`
   const res = await fetch(url, {
     cache: "no-store",
     headers: authHeaders(),

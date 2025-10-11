@@ -1,18 +1,22 @@
-# --- add/keep at top ---
 from typing import Optional
 from fastapi import FastAPI, Depends, HTTPException, status, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, sessionmaker
+
 from .api import alerts, costs
 from .core.config import settings
 from .db import Base, engine
 from .services.ingest import seed_demo_costs
 
+# Single Session factory (reuse the same engine from .db)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
+
+
 def require_token(
     authorization: Optional[str] = Header(default=None),
-    x_api_token:  Optional[str] = Header(default=None),
-    x_api_key:    Optional[str] = Header(default=None),
+    x_api_token: Optional[str] = Header(default=None),
+    x_api_key: Optional[str] = Header(default=None),
 ):
     token = settings.API_DEMO_TOKEN
     if not token:
@@ -28,9 +32,10 @@ def require_token(
     if provided != token:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
 
+
 app = FastAPI(title="Cloud Cost Copilot")
 
-# CORS: allow Authorization and custom headers from the browser
+# CORS (adjust origins for prod)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
@@ -40,6 +45,7 @@ app.add_middleware(
     expose_headers=["*"],
 )
 
+
 @app.on_event("startup")
 def init_db():
     Base.metadata.create_all(bind=engine)
@@ -48,11 +54,31 @@ def init_db():
             if not db.execute(text("SELECT 1 FROM costs LIMIT 1")).fetchone():
                 seed_demo_costs(db)
 
-@app.get("/health")
-def health():
-    with engine.connect() as conn:
-        conn.execute(text("SELECT 1"))
-    return {"status":"ok"}
 
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+
+@app.get("/healthz")  # liveness: app up (no DB check)
+def healthz():
+    return {"status": "ok"}
+
+
+@app.get("/readyz")
+def readyz(db: Session = Depends(get_db)):
+    db.execute(text("SELECT 1"))
+    return {"status": "ok"}
+
+
+@app.get("/health")  # compatibility alias
+def health():
+    return {"status": "ok"}
+
+
+# Protected routers (no token required if API_DEMO_TOKEN is empty)
 app.include_router(costs.router, dependencies=[Depends(require_token)])
 app.include_router(alerts.router, dependencies=[Depends(require_token)])

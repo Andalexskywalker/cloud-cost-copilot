@@ -7,3 +7,9 @@ def test_health():
     r = c.get("/health")
     assert r.status_code == 200
     assert r.json()["status"] == "ok"
+
+def test_readyz():
+    c = TestClient(app)
+    r = c.get("/readyz")
+    assert r.status_code == 200
+    assert r.json()["status"] == "ok"

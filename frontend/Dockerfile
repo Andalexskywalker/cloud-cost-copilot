@@ -1,7 +1,13 @@
 FROM node:20-alpine
 WORKDIR /app
+
 ARG NEXT_PUBLIC_API_BASE
 ENV NEXT_PUBLIC_API_BASE=${NEXT_PUBLIC_API_BASE}
+
+# 👇 ADICIONAR:
+ARG NEXT_PUBLIC_API_TOKEN
+ENV NEXT_PUBLIC_API_TOKEN=${NEXT_PUBLIC_API_TOKEN}
+
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund
 COPY . .
