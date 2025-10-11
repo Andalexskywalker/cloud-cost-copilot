@@ -36,13 +36,20 @@ def require_token(
 app = FastAPI(title="Cloud Cost Copilot")
 
 # CORS (adjust origins for prod)
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from .core.config import settings
+from .db import engine
+
+app = FastAPI(title="Cloud Cost Copilot")
+
+# CORS (usa valores das settings)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],
-    allow_credentials=False,
+    allow_origins=settings.allow_origins_list,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
-    expose_headers=["*"],
 )
 
 
@@ -68,12 +75,12 @@ def healthz():
     return {"status": "ok"}
 
 
-@app.get("/readyz")  # readiness: app + DB
+# Readyz (db ping)
+@app.get("/readyz")
 def readyz():
-    # usa engine direto para evitar sessões sem bind
     with engine.connect() as conn:
         conn.execute(text("SELECT 1"))
-    return {"status": "ok"}
+    return {"db": "ok"}
 
 
 @app.get("/health")  # compatibility alias

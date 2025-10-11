@@ -2,10 +2,24 @@ name: ci
 on: [push, pull_request]
 
 jobs:
-  test:
+  backend:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ccc
+          POSTGRES_USER: ccc
+          POSTGRES_PASSWORD: testpass
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U ccc -d ccc"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
     env:
-      DATABASE_URL: sqlite:///./test.db
+      DATABASE_URL: postgresql+psycopg://ccc:testpass@localhost:5432/ccc
       DEMO_MODE: "0"
     steps:
       - uses: actions/checkout@v4
@@ -14,56 +28,29 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
           cache-dependency-path: backend/requirements.txt
-      - run: pip install -r backend/requirements.txt pytest
-      # sanity para ver paths (opcional, mas útil enquanto fechamos)
-      - name: Sanity
-        run: |
-          python - <<'PY'
-          import os, pathlib
-          print("cwd:", os.getcwd())
-          print("app exists:", pathlib.Path("backend/app/main.py").exists())
-          PY
-      - name: Run tests
-        run: pytest -q
-        env:
-          # força pythonpath para os testes mesmo sem o pytest.ini
-          PYTHONPATH: backend
-
-  lint_and_types:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-          cache: 'pip'
-          cache-dependency-path: backend/requirements.txt
-      - run: pip install -r backend/requirements.txt ruff mypy black types-requests
-
-
-      # Ruff: arruma imports automaticamente
-      - name: Ruff (imports fix)
+      - name: Install deps
         working-directory: backend
-        run: ruff check . --select I --fix
-
-      # Black: FORMATA (não só check) para não falhar
-      - name: Black (format)
-        working-directory: backend
-        run: black .
-
-      # Black: check por garantia (vai passar porque formatámos antes)
-      - name: Black (check)
-        working-directory: backend
-        run: black --check .
-
-      # Ruff geral (deixa o Black tratar de largura; ignora E501)
-      - name: Ruff (lint)
+        run: pip install -r requirements.txt
+      - name: Lint (ruff)
         working-directory: backend
         run: ruff check . --ignore E501
-
-      # Mypy
-      - name: Mypy (types)
+      - name: Format (black --check)
         working-directory: backend
-        env:
-          PYTHONPATH: .
+        run: black --check .
+      - name: Types (mypy)
+        working-directory: backend
+        env: { PYTHONPATH: . }
         run: mypy app
+      - name: Tests (pytest)
+        working-directory: backend
+        run: pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults: { run: { working-directory: frontend } }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+      - run: npm ci
+      - run: npm run build

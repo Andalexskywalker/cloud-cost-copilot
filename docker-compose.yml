@@ -5,6 +5,7 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
     volumes:
       - db_data:/var/lib/postgresql/data
     ports:
@@ -18,24 +19,19 @@ services:
   backend:
     build: ./backend
     env_file: .env
+    environment:
+      DEMO_MODE: "1"         # seed de dados fake
+      TZ: ${TZ}
     depends_on:
       db:
         condition: service_healthy
-    ports:
-      - "8000:8000"
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0) if urllib.request.urlopen('http://localhost:8000/readyz').getcode()==200 else sys.exit(1)"]
-      interval: 15s
+      test: ["CMD", "curl", "-f", "http://localhost:8000/healthz"]
+      interval: 10s
       timeout: 3s
       retries: 5
-
-  worker:
-    build: ./backend
-    env_file: .env
-    depends_on:
-      backend:
-        condition: service_healthy
-    command: python -m app.services.worker
+    ports:
+      - "8000:8000"
 
   frontend:
     build:
@@ -46,6 +42,7 @@ services:
     env_file: .env
     environment:
       PORT: 3000
+      TZ: ${TZ}
     depends_on:
       backend:
         condition: service_healthy
