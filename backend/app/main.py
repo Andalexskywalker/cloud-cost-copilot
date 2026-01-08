@@ -43,7 +43,7 @@ from .db import engine
 
 app = FastAPI(title="Cloud Cost Copilot")
 
-# CORS (usa valores das settings)
+# CORS (uses settings values)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allow_origins_list,
