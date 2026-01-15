@@ -1,10 +1,33 @@
-﻿.env
-.venv/
+﻿# General
+.DS_Store
+*.log
+
+# Backend / Python
 __pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.env
 .mypy_cache/
-dist/
-build/
 *.sqlite
+*.db
 
+# Frontend / Node / Next.js
+node_modules/
+.next/
+out/
+build/
+dist/
+coverage/
+.odt
 
+# Environment Files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+*.pem
 
+# IDEs
+.vscode/
+.idea/
