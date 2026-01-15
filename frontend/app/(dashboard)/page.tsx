@@ -18,7 +18,7 @@ export const dynamic = 'force-dynamic'
 export const fetchCache = 'force-no-store'
 export const dynamicParams = true
 
-type Cost = { id:number; service:string; day:string; amount:number }
+type Cost = { id: number; service: string; day: string; amount: number }
 
 /** Shell com Suspense p/ permitir useSearchParams dentro do conteúdo */
 export default function Page() {
@@ -63,32 +63,32 @@ function DashboardContent() {
 
   // -------- services loading state + race guard ----------
   const [svcLoading, setSvcLoading] = useState(false)
-  const [svcError, setSvcError] = useState<string|null>(null)
+  const [svcError, setSvcError] = useState<string | null>(null)
 
   useEffect(() => {
     let alive = true
     const ac = new AbortController()
-    ;(async () => {
-      setSvcLoading(true)
-      setSvcError(null)
-      try {
-        const list = await fetchServices({ from, to, signal: ac.signal })
-        if (!alive) return
-        setServices(list)
+      ; (async () => {
+        setSvcLoading(true)
+        setSvcError(null)
+        try {
+          const list = await fetchServices({ from, to, signal: ac.signal })
+          if (!alive) return
+          setServices(list)
 
-        // apenas corrige o parâmetro quando tens lista válida
-        const current = serviceParam
-        if (list.length && (!current || !list.includes(current))) {
-          query.set('service', list[0])
+          // apenas corrige o parâmetro quando tens lista válida
+          const current = serviceParam
+          if (list.length && (!current || !list.includes(current))) {
+            query.set('service', list[0])
+          }
+        } catch (e: any) {
+          if (!alive) return
+          setServices([])
+          setSvcError(e?.message || 'Failed to load services')
+        } finally {
+          if (alive) setSvcLoading(false)
         }
-      } catch (e: any) {
-        if (!alive) return
-        setServices([])
-        setSvcError(e?.message || 'Failed to load services')
-      } finally {
-        if (alive) setSvcLoading(false)
-      }
-    })()
+      })()
     return () => { alive = false; ac.abort() }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [from, to]) // não depender de serviceParam
@@ -130,7 +130,7 @@ function DashboardContent() {
     <div className="p-6 md:p-8">
       <header className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Cloud Cost Copilot</h1>
-        <p className="text-sm opacity-70">Anomalias de custo em tempo quase-real, com alertas e sugestões.</p>
+        <p className="text-sm opacity-70">Real-time cloud cost anomalies with alerts and suggestions.</p>
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -207,11 +207,11 @@ function DashboardContent() {
           <section className="p-4 panel">
             <h2 className="text-sm font-semibold mb-2">Cost over time</h2>
             {loading
-              ? <LoadingBlock height={260}/>
+              ? <LoadingBlock height={260} />
               : (series[0].points.length
-                  ? <Chart series={series} h={260}/>
-                  : <EmptyState title="No data" subtitle="Try a different date range or service." />
-                )
+                ? <Chart series={series} h={260} />
+                : <EmptyState title="No data" subtitle="Try a different date range or service." />
+              )
             }
           </section>
 
@@ -221,7 +221,7 @@ function DashboardContent() {
               <span className="text-xs opacity-70">{rows.length} rows</span>
             </div>
             {loading ? (
-              <LoadingBlock height={160}/>
+              <LoadingBlock height={160} />
             ) : rows.length ? (
               <div className="overflow-auto">
                 <table className="table min-w-full text-sm">
